@@ -7,8 +7,8 @@ const speakeasy = require('speakeasy');
 
 
 const register = (req, res)=>{
-    const query = "SELECT * FROM users WHERE email = ? OR full_name = ?"
-    const{email, full_name} = req.body
+    const query = "SELECT * FROM users WHERE email = ? OR username = ?"
+    const{email, username} = req.body
     const secret = speakeasy.generateSecret({ length: 20 });
 
     const otp = speakeasy.totp({
@@ -35,19 +35,18 @@ const register = (req, res)=>{
       }
     });
 
-    db.query(query, [email, full_name], (err, data)=>{
+    db.query(query, [email, username], (err, data)=>{
         if(err) return res.json(err);
         if(data.length) return res.status(409).json("User already exist");
 
         const salt = bcrypt.genSaltSync(10);
         const hash = bcrypt.hashSync(req.body.password, salt);
 
-        const query = "INSERT INTO users(`full_name`, `email`, `password`, `phone`) VALUES(?)"
+        const query = "INSERT INTO users(`username`, `email`, `password`) VALUES(?)"
         const values = [
-            req.body.full_name,
+            req.body.username,
             req.body.email,
             hash,
-            req.body.phone
         ]
 
         db.query(query, [values], (err, data)=>{
