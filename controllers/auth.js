@@ -6,56 +6,64 @@ const speakeasy = require('speakeasy');
 
 
 
-const register = (req, res)=>{
-    const query = "SELECT * FROM users WHERE email = ? OR username = ?"
-    const{email, username} = req.body
-    const secret = speakeasy.generateSecret({ length: 20 });
+const register = (req, res) => {
+  const query = "SELECT * FROM users WHERE email = ? OR username = ?";
+  const { email, username } = req.body;
+  const secret = speakeasy.generateSecret({ length: 20 });
 
-    const otp = speakeasy.totp({
+  const otp = speakeasy.totp({
       secret: secret.base32,
       encoding: 'base32',
-      window: 1
-    });
-  
-    otpStorage.set(email, { otp, secret: secret.base32 });
-  
-    const mailOptions = {
+      window: 1,
+  });
+
+  otpStorage.set(email, { otp, secret: secret.base32 });
+
+  const mailOptions = {
       from: 'eyidana001@gmail.com',
       to: email,
       subject: 'Your OTP for Verification',
       text: `Your OTP is ${otp}`,
-    };
-  
-    transporter.sendMail(mailOptions, (error, info) => {
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
-        console.error('Error sending email:', error);
-        res.status(500).send('Internal Server Error');
-      } else {
-        res.status(200).send('OTP sent successfully');
+          console.error('Error sending email:', error);
+          return res.status(500).send('Internal Server Error');
       }
-    });
 
-    db.query(query, [email, username], (err, data)=>{
-        if(err) return res.json(err);
-        if(data.length) return res.status(409).json("User already exist");
+      db.query(query, [email, username], (err, data) => {
+          if (err) {
+              console.error('Database query error:', err);
+              return res.status(500).json(err);
+          }
 
-        const salt = bcrypt.genSaltSync(10);
-        const hash = bcrypt.hashSync(req.body.password, salt);
+          if (data.length) {
+              return res.status(409).json("User already exists");
+          }
 
-        const query = "INSERT INTO users(`username`, `email`, `password`) VALUES(?)"
-        const values = [
-            req.body.username,
-            req.body.email,
-            hash,
-        ]
+          const salt = bcrypt.genSaltSync(10);
+          const hash = bcrypt.hashSync(req.body.password, salt);
 
-        db.query(query, [values], (err, data)=>{
-            if(err) return res.json(err);
-            return res.status(201).json("User created succesfully");
-        })
-    })
+          const insertQuery = "INSERT INTO users(`username`, `email`, `password`) VALUES(?)";
+          const values = [
+              req.body.username,
+              req.body.email,
+              hash,
+          ];
 
-}
+          db.query(insertQuery, [values], (insertErr, insertData) => {
+              if (insertErr) {
+                  console.error('Insert query error:', insertErr);
+                  return res.status(500).json(insertErr);
+              }
+
+              return res.status(201).json("User created successfully");
+          });
+      });
+  });
+};
+
 
 const login = (req, res)=>{
     const query = "SELECT * FROM users WHERE email = ?";
@@ -125,7 +133,6 @@ const verifyOtp = (req, res) => {
   const { email, userOTP } = req.body;
 
   const storedData = otpStorage.get(email);
-  console.log(email)
 
   if (!storedData) {
     console.log('No stored data for email:', email);
