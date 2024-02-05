@@ -19,7 +19,7 @@ const register = (req, res) => {
 
   otpStorage.set(email, { otp, secret: secret.base32 });
 
-  console.log('Recipient email:', email);  // Add this log statement
+  console.log('Recipient email:', email); 
 
   const trimmedEmail = email.trim();
   const mailOptions = {
@@ -30,20 +30,15 @@ const register = (req, res) => {
   };
 
   if (!trimmedEmail || !/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
-      console.error('Invalid or empty email address');
       return res.status(400).send('Invalid or empty email address');
   }
 
   transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
-          console.error('Error sending email:', error);
           return res.status(500).send('Internal Server Error');
       }
-
-      // Continue with the database query only after sending the email
       db.query(query, [trimmedEmail, username], (err, data) => {
           if (err) {
-              console.error('Database query error:', err);
               return res.status(500).json(err);
           }
 
@@ -63,7 +58,6 @@ const register = (req, res) => {
 
           db.query(insertQuery, [values], (insertErr, insertData) => {
               if (insertErr) {
-                  console.error('Insert query error:', insertErr);
                   return res.status(500).json(insertErr);
               }
 
@@ -99,7 +93,6 @@ const login = (req, res) => {
               httpOnly: true
           }).status(200).json(other);
       } catch (jwtError) {
-          console.error('JWT token creation error:', jwtError);
           return res.status(500).json(jwtError);
       }
   });
