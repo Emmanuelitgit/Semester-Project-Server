@@ -19,12 +19,20 @@ const register = (req, res) => {
 
   otpStorage.set(email, { otp, secret: secret.base32 });
 
+  console.log('Recipient email:', email);  // Add this log statement
+
+  const trimmedEmail = email.trim();
   const mailOptions = {
       from: 'eyidana001@gmail.com',
-      to: email,
+      to: trimmedEmail,
       subject: 'Your OTP for Verification',
       text: `Your OTP is ${otp}`,
   };
+
+  if (!trimmedEmail || !/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
+      console.error('Invalid or empty email address');
+      return res.status(400).send('Invalid or empty email address');
+  }
 
   transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
@@ -32,7 +40,8 @@ const register = (req, res) => {
           return res.status(500).send('Internal Server Error');
       }
 
-      db.query(query, [email, username], (err, data) => {
+      // Continue with the database query only after sending the email
+      db.query(query, [trimmedEmail, username], (err, data) => {
           if (err) {
               console.error('Database query error:', err);
               return res.status(500).json(err);
@@ -48,7 +57,7 @@ const register = (req, res) => {
           const insertQuery = "INSERT INTO users(`username`, `email`, `password`) VALUES(?)";
           const values = [
               req.body.username,
-              req.body.email,
+              trimmedEmail,
               hash,
           ];
 
