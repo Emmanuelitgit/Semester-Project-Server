@@ -68,32 +68,36 @@ const speakeasy = require('speakeasy');
 //   });
 // };
 
-const register = (req, res)=>{
+const register = (req, res) => {
+  const query = "SELECT * FROM users WHERE email = ?";
+  const { email, password, username } = req.body; 
 
-  const query = "SELECT * FROM users WHERE email = ?"
-  const{email} = req.body
+  if (!email || !password || !username) {
+    return res.status(400).json({ message: "Email, password, or username is missing" });
+  }
 
-  db.query(query, [email, username], (err, data)=>{
-      if(err) return res.json(err);
-      if(data.length) return res.status(409).json("User already exist");
+  db.query(query, [email], (err, data) => {
+    if (err) {
+      return res.status(500).json({ message: "Database error", error: err });
+    }
+    if (data.length > 0) {
+      return res.status(409).json({ message: "User already exists" });
+    }
 
-      const salt = bcrypt.genSaltSync(10);
-      const hash = bcrypt.hashSync(req.body.password, salt);
+    const salt = bcrypt.genSaltSync(10);
+    const hash = bcrypt.hashSync(password, salt); 
 
-      const query = "INSERT INTO users(`username`, `email`, `password`) VALUES(?)"
-      const values = [
-          req.body.username,
-          req.body.email,
-          hash,
-      ]
+    const insertQuery = "INSERT INTO users(`username`, `email`, `password`) VALUES(?)";
+    const values = [username, email, hash]; 
 
-      db.query(query, [values], (err, data)=>{
-          if(err) return res.status(500).json(err);
-          return res.status(201).json(data);
-      })
-  })
-
-}
+    db.query(insertQuery, [values], (err, data) => {
+      if (err) {
+        return res.status(500).json({ message: "Error creating user", error: err });
+      }
+      return res.status(201).json({ message: "User created successfully", data: data });
+    });
+  });
+};
 
 
 const login = (req, res) => {
