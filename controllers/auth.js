@@ -102,7 +102,6 @@ console.log(email, password, username)
 
 const login = (req, res) => {
   const query = "SELECT * FROM users WHERE email = ?";
-  console.log(req.body.email)
   db.query(query, [req.body.email], (err, data) => {
       if (err) {
           return res.status(500).json(err);
