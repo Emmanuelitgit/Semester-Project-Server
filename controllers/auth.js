@@ -70,8 +70,8 @@ const speakeasy = require('speakeasy');
 
 const register = (req, res)=>{
 
-  const query = "SELECT * FROM users WHERE email = ? OR username = ?"
-  const{email, username} = req.body
+  const query = "SELECT * FROM users WHERE email = ?"
+  const{email} = req.body
 
   db.query(query, [email, username], (err, data)=>{
       if(err) return res.json(err);
@@ -88,7 +88,7 @@ const register = (req, res)=>{
       ]
 
       db.query(query, [values], (err, data)=>{
-          if(err) return res.json(err);
+          if(err) return res.status(500).json(err);
           return res.status(200).json(data);
       })
   })
