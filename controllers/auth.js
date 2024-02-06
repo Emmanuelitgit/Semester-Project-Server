@@ -10,13 +10,13 @@ const register = (req, res) => {
   const query = "SELECT * FROM users WHERE email = ? OR username = ?";
   const { email, username, password } = req.body; // Extract password from req.body
 
-  if (!email || !email.trim() || !/^\S+@\S+\.\S+$/.test(email.trim())) {
-    return res.status(400).send('Invalid or empty email address');
-  }
+  // if (!email || !email.trim() || !/^\S+@\S+\.\S+$/.test(email.trim())) {
+  //   return res.status(400).send('Invalid or empty email address');
+  // }
 
-  if (!password) {
-    return res.status(400).send('Password is missing');
-  }
+  // if (!password) {
+  //   return res.status(400).send('Password is missing');
+  // }
 
   const secret = speakeasy.generateSecret({ length: 20 });
   const otp = speakeasy.totp({
