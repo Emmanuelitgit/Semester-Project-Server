@@ -89,7 +89,7 @@ const register = (req, res)=>{
 
       db.query(query, [values], (err, data)=>{
           if(err) return res.status(500).json(err);
-          return res.status(200).json(data);
+          return res.status(201).json(data);
       })
   })
 
