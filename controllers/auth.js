@@ -29,10 +29,10 @@ const register = (req, res) => {
 
   console.log('Recipient email:', email); 
 
-  const trimmedEmail = email.trim();
+  // const trimmedEmail = email.trim();
   const mailOptions = {
     from: 'eyidana001@gmail.com',
-    to: trimmedEmail,
+    to: email,
     subject: 'Your OTP for Verification',
     text: `Your OTP is ${otp}`,
   };
@@ -42,7 +42,7 @@ const register = (req, res) => {
       return res.status(500).send('Internal Server Error');
     }
 
-    db.query(query, [trimmedEmail, username], (err, data) => {
+    db.query(query, [email, username], (err, data) => {
       if (err) {
         return res.status(500).json(err);
       }
@@ -57,7 +57,7 @@ const register = (req, res) => {
       const insertQuery = "INSERT INTO users(`username`, `email`, `password`) VALUES(?)";
       const values = [
         username,
-        trimmedEmail,
+        email,
         hash,
       ];
 
