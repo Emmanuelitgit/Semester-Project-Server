@@ -76,7 +76,7 @@ const login = (req, res) => {
       }
       
       if (data.length === 0) {
-          return res.status(404).json("User not found!");
+          return res.status(405).json("User not found!");
       }
 
       const isPasswordCorrect = bcrypt.compareSync(req.body.password, data[0].password);
