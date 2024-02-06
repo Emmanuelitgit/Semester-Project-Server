@@ -6,67 +6,94 @@ const speakeasy = require('speakeasy');
 
 
 
-const register = (req, res) => {
-  const query = "SELECT * FROM users WHERE email = ? OR username = ?";
-  const { email, username } = req.body;
+// const register = (req, res) => {
+//   const query = "SELECT * FROM users WHERE email = ? OR username = ?";
+//   const { email, username } = req.body;
 
-  if (!email || !email.trim() || !/^\S+@\S+\.\S+$/.test(email.trim())) {
-    return res.status(400).send('Invalid or empty email address');
-  }
+//   if (!email || !email.trim() || !/^\S+@\S+\.\S+$/.test(email.trim())) {
+//     return res.status(400).send('Invalid or empty email address');
+//   }
 
-  const secret = speakeasy.generateSecret({ length: 20 });
-  const otp = speakeasy.totp({
-    secret: secret.base32,
-    encoding: 'base32',
-    window: 1,
-  });
+//   const secret = speakeasy.generateSecret({ length: 20 });
+//   const otp = speakeasy.totp({
+//     secret: secret.base32,
+//     encoding: 'base32',
+//     window: 1,
+//   });
 
-  otpStorage.set(email, { otp, secret: secret.base32 });
+//   otpStorage.set(email, { otp, secret: secret.base32 });
 
-  console.log('Recipient email:', email); 
+//   console.log('Recipient email:', email); 
 
-  const trimmedEmail = email.trim();
-  const mailOptions = {
-    from: 'eyidana001@gmail.com',
-    to: trimmedEmail,
-    subject: 'Your OTP for Verification',
-    text: `Your OTP is ${otp}`,
-  };
+//   const trimmedEmail = email.trim();
+//   const mailOptions = {
+//     from: 'eyidana001@gmail.com',
+//     to: trimmedEmail,
+//     subject: 'Your OTP for Verification',
+//     text: `Your OTP is ${otp}`,
+//   };
 
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      return res.status(500).send('Internal Server Error');
-    }
+//   transporter.sendMail(mailOptions, (error, info) => {
+//     if (error) {
+//       return res.status(500).send('Internal Server Error');
+//     }
 
-    db.query(query, [trimmedEmail, username], (err, data) => {
-      if (err) {
-        return res.status(500).json(err);
-      }
+//     db.query(query, [trimmedEmail, username], (err, data) => {
+//       if (err) {
+//         return res.status(500).json(err);
+//       }
 
-      if (data.length) {
-        return res.status(409).json("User already exists");
-      }
+//       if (data.length) {
+//         return res.status(409).json("User already exists");
+//       }
+
+//       const salt = bcrypt.genSaltSync(10);
+//       const hash = bcrypt.hashSync(req.body.password, salt);
+
+//       const insertQuery = "INSERT INTO users(`username`, `email`, `password`) VALUES(?)";
+//       const values = [
+//         req.body.username,
+//         trimmedEmail,
+//         hash,
+//       ];
+
+//       db.query(insertQuery, [values], (insertErr, insertData) => {
+//         if (insertErr) {
+//           return res.status(500).json(insertErr);
+//         }
+
+//         return res.status(201).json("User created successfully");
+//       });
+//     });
+//   });
+// };
+
+const register = (req, res)=>{
+
+  const query = "SELECT * FROM users WHERE email = ? OR username = ?"
+  const{email, username} = req.body
+
+  db.query(query, [email, username], (err, data)=>{
+      if(err) return res.json(err);
+      if(data.length) return res.status(409).json("User already exist");
 
       const salt = bcrypt.genSaltSync(10);
       const hash = bcrypt.hashSync(req.body.password, salt);
 
-      const insertQuery = "INSERT INTO users(`username`, `email`, `password`) VALUES(?)";
+      const query = "INSERT INTO users(`username`, `email`, `password`) VALUES(?)"
       const values = [
-        req.body.username,
-        trimmedEmail,
-        hash,
-      ];
+          req.body.username,
+          req.body.email,
+          hash,
+      ]
 
-      db.query(insertQuery, [values], (insertErr, insertData) => {
-        if (insertErr) {
-          return res.status(500).json(insertErr);
-        }
+      db.query(query, [values], (err, data)=>{
+          if(err) return res.json(err);
+          return res.status(200).json(data);
+      })
+  })
 
-        return res.status(201).json("User created successfully");
-      });
-    });
-  });
-};
+}
 
 
 const login = (req, res) => {
