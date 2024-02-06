@@ -6,98 +6,103 @@ const speakeasy = require('speakeasy');
 
 
 
-// const register = (req, res) => {
-//   const query = "SELECT * FROM users WHERE email = ? OR username = ?";
-//   const { email, username } = req.body;
-
-//   if (!email || !email.trim() || !/^\S+@\S+\.\S+$/.test(email.trim())) {
-//     return res.status(400).send('Invalid or empty email address');
-//   }
-
-//   const secret = speakeasy.generateSecret({ length: 20 });
-//   const otp = speakeasy.totp({
-//     secret: secret.base32,
-//     encoding: 'base32',
-//     window: 1,
-//   });
-
-//   otpStorage.set(email, { otp, secret: secret.base32 });
-
-//   console.log('Recipient email:', email); 
-
-//   const trimmedEmail = email.trim();
-//   const mailOptions = {
-//     from: 'eyidana001@gmail.com',
-//     to: trimmedEmail,
-//     subject: 'Your OTP for Verification',
-//     text: `Your OTP is ${otp}`,
-//   };
-
-//   transporter.sendMail(mailOptions, (error, info) => {
-//     if (error) {
-//       return res.status(500).send('Internal Server Error');
-//     }
-
-//     db.query(query, [trimmedEmail, username], (err, data) => {
-//       if (err) {
-//         return res.status(500).json(err);
-//       }
-
-//       if (data.length) {
-//         return res.status(409).json("User already exists");
-//       }
-
-//       const salt = bcrypt.genSaltSync(10);
-//       const hash = bcrypt.hashSync(req.body.password, salt);
-
-//       const insertQuery = "INSERT INTO users(`username`, `email`, `password`) VALUES(?)";
-//       const values = [
-//         req.body.username,
-//         trimmedEmail,
-//         hash,
-//       ];
-
-//       db.query(insertQuery, [values], (insertErr, insertData) => {
-//         if (insertErr) {
-//           return res.status(500).json(insertErr);
-//         }
-
-//         return res.status(201).json("User created successfully");
-//       });
-//     });
-//   });
-// };
-
 const register = (req, res) => {
-  const query = "SELECT * FROM users WHERE email = ?";
-  const { email, password, username } = req.body; 
-console.log(email, password, username)
-  if (!email || !password || !username) {
-    return res.status(400).json({ message: "Email, password, or username is missing" });
+  const query = "SELECT * FROM users WHERE email = ? OR username = ?";
+  const { email, username, password } = req.body; // Extract password from req.body
+
+  if (!email || !email.trim() || !/^\S+@\S+\.\S+$/.test(email.trim())) {
+    return res.status(400).send('Invalid or empty email address');
   }
 
-  db.query(query, [email], (err, data) => {
-    if (err) {
-      return res.status(500).json({ message: "Database error", error: err });
+  if (!password) {
+    return res.status(400).send('Password is missing');
+  }
+
+  const secret = speakeasy.generateSecret({ length: 20 });
+  const otp = speakeasy.totp({
+    secret: secret.base32,
+    encoding: 'base32',
+    window: 1,
+  });
+
+  otpStorage.set(email, { otp, secret: secret.base32 });
+
+  console.log('Recipient email:', email); 
+
+  const trimmedEmail = email.trim();
+  const mailOptions = {
+    from: 'eyidana001@gmail.com',
+    to: trimmedEmail,
+    subject: 'Your OTP for Verification',
+    text: `Your OTP is ${otp}`,
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      return res.status(500).send('Internal Server Error');
     }
-    if (data.length > 0) {
-      return res.status(409).json({ message: "User already exists" });
-    }
 
-    const salt = bcrypt.genSaltSync(10);
-    const hash = bcrypt.hashSync(password, salt); 
-
-    const insertQuery = "INSERT INTO users(`username`, `email`, `password`) VALUES(?)";
-    const values = [username, email, hash]; 
-
-    db.query(insertQuery, [values], (err, data) => {
+    db.query(query, [trimmedEmail, username], (err, data) => {
       if (err) {
-        return res.status(500).json({ message: "Error creating user", error: err });
+        return res.status(500).json(err);
       }
-      return res.status(201).json({ message: "User created successfully", data: data });
+
+      if (data.length) {
+        return res.status(409).json("User already exists");
+      }
+
+      const salt = bcrypt.genSaltSync(10);
+      const hash = bcrypt.hashSync(password, salt); // Use extracted password
+
+      const insertQuery = "INSERT INTO users(`username`, `email`, `password`) VALUES(?)";
+      const values = [
+        username,
+        trimmedEmail,
+        hash,
+      ];
+
+      db.query(insertQuery, [values], (insertErr, insertData) => {
+        if (insertErr) {
+          return res.status(500).json(insertErr);
+        }
+
+        return res.status(201).json("User created successfully");
+      });
     });
   });
 };
+
+
+// const register = (req, res) => {
+//   const query = "SELECT * FROM users WHERE email = ?";
+//   const { email, password, username } = req.body; 
+// console.log(email, password, username)
+//   if (!email || !password || !username) {
+//     return res.status(400).json({ message: "Email, password, or username is missing" });
+//   }
+
+//   db.query(query, [email], (err, data) => {
+//     if (err) {
+//       return res.status(500).json({ message: "Database error", error: err });
+//     }
+//     if (data.length > 0) {
+//       return res.status(409).json({ message: "User already exists" });
+//     }
+
+//     const salt = bcrypt.genSaltSync(10);
+//     const hash = bcrypt.hashSync(password, salt); 
+
+//     const insertQuery = "INSERT INTO users(`username`, `email`, `password`) VALUES(?)";
+//     const values = [username, email, hash]; 
+
+//     db.query(insertQuery, [values], (err, data) => {
+//       if (err) {
+//         return res.status(500).json({ message: "Error creating user", error: err });
+//       }
+//       return res.status(201).json({ message: "User created successfully", data: data });
+//     });
+//   });
+// };
 
 
 const login = (req, res) => {
