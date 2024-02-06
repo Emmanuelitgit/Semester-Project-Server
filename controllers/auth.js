@@ -71,7 +71,7 @@ const speakeasy = require('speakeasy');
 const register = (req, res) => {
   const query = "SELECT * FROM users WHERE email = ?";
   const { email, password, username } = req.body; 
-
+console.log(email, password, username)
   if (!email || !password || !username) {
     return res.status(400).json({ message: "Email, password, or username is missing" });
   }
